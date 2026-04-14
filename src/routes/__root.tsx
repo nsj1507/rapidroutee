@@ -34,11 +34,13 @@ export const Route = createRootRoute({
       { title: "Rapid Route+ — Emergency & Last-Minute Travel" },
       { name: "description", content: "Find the fastest, safest travel options during emergencies and urgent situations." },
       { name: "author", content: "Rapid Route+" },
-      { property: "og:title", content: "Rapid Route+" },
-      { property: "og:description", content: "Emergency and last-minute travel assistance." },
+      { property: "og:title", content: "Rapid Route+ — Emergency & Last-Minute Travel" },
+      { property: "og:description", content: "Find the fastest, safest travel options during emergencies and urgent situations." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Rapid Route+ — Emergency & Last-Minute Travel" },
+      { name: "twitter:description", content: "Find the fastest, safest travel options during emergencies and urgent situations." },
     ],
     links: [
       {
