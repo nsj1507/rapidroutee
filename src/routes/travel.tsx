@@ -2,22 +2,23 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   MapPin,
-  Bus,
-  Train,
-  Plane,
-  Car,
-  Clock,
-  IndianRupee,
-  ArrowRight,
-  ExternalLink,
-  Sparkles,
   LocateFixed,
   Navigation,
+  ArrowRight,
+  Sparkles,
+  AlertTriangle,
+  ExternalLink,
+  Brain,
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RouteCard, type RouteData } from "@/components/travel/RouteCard";
+import { EmergencyBanner } from "@/components/travel/EmergencyBanner";
+import { NoRouteFallback } from "@/components/travel/NoRouteFallback";
+import { AnalysisLoader } from "@/components/travel/AnalysisLoader";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/travel")({
   head: () => ({
@@ -25,79 +26,67 @@ export const Route = createFileRoute("/travel")({
       { title: "Last-Minute Travel — Rapid Route+" },
       {
         name: "description",
-        content: "Compare bus, train, flight, and car routes. Find the fastest and cheapest travel option.",
+        content:
+          "AI-powered route intelligence. Compare bus, train, flight, and car routes with real-time feasibility analysis.",
       },
       { property: "og:title", content: "Last-Minute Travel — Rapid Route+" },
-      { property: "og:description", content: "Compare and book travel options instantly." },
+      { property: "og:description", content: "AI-powered travel route intelligence." },
     ],
   }),
   component: TravelPage,
 });
 
-interface TravelOption {
-  mode: string;
-  icon: typeof Bus;
-  time: string;
-  cost: string;
-  tag?: string;
-  tagColor?: string;
-  bookUrl: string;
-  bookLabel: string;
+interface AIAnalysis {
+  routes: RouteData[];
+  bestForEmergency: {
+    mode: string;
+    reason: string;
+    fastestReachTime: string;
+  } | null;
+  noRouteAlternative: {
+    nearestHub: string;
+    steps: { instruction: string; duration: string }[];
+    message: string;
+  } | null;
+  summary: string;
 }
-
-const travelOptions: TravelOption[] = [
-  {
-    mode: "Bus",
-    icon: Bus,
-    time: "6h 30m",
-    cost: "₹450–800",
-    tag: "Cheapest",
-    tagColor: "bg-success/10 text-success",
-    bookUrl: "https://www.redbus.in",
-    bookLabel: "RedBus / KSRTC",
-  },
-  {
-    mode: "Train",
-    icon: Train,
-    time: "4h 15m",
-    cost: "₹300–1,200",
-    tag: "Best Value",
-    tagColor: "bg-primary/10 text-primary",
-    bookUrl: "https://www.irctc.co.in",
-    bookLabel: "IRCTC",
-  },
-  {
-    mode: "Flight",
-    icon: Plane,
-    time: "1h 10m",
-    cost: "₹2,500–5,000",
-    tag: "Fastest",
-    tagColor: "bg-accent/10 text-accent",
-    bookUrl: "https://www.skyscanner.co.in",
-    bookLabel: "Skyscanner",
-  },
-  {
-    mode: "Car",
-    icon: Car,
-    time: "5h 45m",
-    cost: "₹1,200 (fuel)",
-    bookUrl: "https://maps.google.com",
-    bookLabel: "Google Maps",
-  },
-];
 
 function TravelPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [showResults, setShowResults] = useState(false);
+  const [travelMode, setTravelMode] = useState<"travel" | "emergency">("travel");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = () => {
-    if (from && to) setShowResults(true);
+  const handleSearch = async () => {
+    if (!from || !to) return;
+
+    setIsAnalyzing(true);
+    setAnalysis(null);
+    setError(null);
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "route-intelligence",
+        { body: { from, to, mode: travelMode } }
+      );
+
+      if (fnError) throw new Error(fnError.message || "AI analysis failed");
+      if (data?.error) throw new Error(data.error);
+
+      setAnalysis(data as AIAnalysis);
+    } catch (e) {
+      console.error("Route analysis error:", e);
+      setError(e instanceof Error ? e.message : "Failed to analyze routes");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title="Last-Minute Travel" subtitle="Find your fastest route" />
+      <AppHeader title="Route Intelligence" subtitle="AI-powered travel analysis" />
 
       <main className="px-4 py-4 space-y-5">
         {/* Location Input */}
@@ -125,99 +114,109 @@ function TravelPage() {
               className="pl-10 rounded-xl"
             />
           </div>
+
+          {/* Mode Toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setTravelMode("travel")}
+              className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold font-[family-name:var(--font-heading)] transition-all ${
+                travelMode === "travel"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-secondary text-secondary-foreground"
+              }`}
+            >
+              <Navigation className="h-4 w-4" />
+              Last-Minute Travel
+            </button>
+            <button
+              onClick={() => setTravelMode("emergency")}
+              className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold font-[family-name:var(--font-heading)] transition-all ${
+                travelMode === "emergency"
+                  ? "bg-emergency text-emergency-foreground shadow-md"
+                  : "bg-secondary text-secondary-foreground"
+              }`}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Emergency Mode
+            </button>
+          </div>
+
           <Button
             onClick={handleSearch}
             className="w-full rounded-xl"
             size="lg"
-            disabled={!from || !to}
+            variant={travelMode === "emergency" ? "emergency" : "default"}
+            disabled={!from || !to || isAnalyzing}
           >
-            <Navigation className="h-4 w-4" />
-            Find Routes
+            <Brain className="h-4 w-4" />
+            {isAnalyzing ? "Analyzing Routes..." : "Analyze Routes with AI"}
           </Button>
         </div>
 
-        {/* AI Suggestion */}
-        {showResults && (
-          <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-4 w-4 text-accent" />
-              <h3 className="font-[family-name:var(--font-heading)] font-semibold text-sm text-foreground">
-                AI Recommendation
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              For <span className="font-medium text-foreground">{from}</span> →{" "}
-              <span className="font-medium text-foreground">{to}</span>, we recommend
-              taking the <span className="font-medium text-accent">train</span> — best
-              balance of speed, cost, and comfort. Estimated 4h 15m at ₹300–1,200.
+        {/* Loading */}
+        {isAnalyzing && <AnalysisLoader />}
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-2xl border border-emergency/30 bg-emergency/5 p-4">
+            <p className="text-sm text-emergency font-medium">{error}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Try again or check your connection.
             </p>
           </div>
         )}
 
-        {/* Travel Options */}
-        {showResults && (
-          <section>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
-              Travel Options
-            </h2>
-            <div className="space-y-3">
-              {travelOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <div
-                    key={option.mode}
-                    className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-[family-name:var(--font-heading)] font-semibold text-card-foreground">
-                              {option.mode}
-                            </h3>
-                            {option.tag && (
-                              <span
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${option.tagColor}`}
-                              >
-                                {option.tag}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          {option.time}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <IndianRupee className="h-3.5 w-3.5" />
-                          {option.cost}
-                        </span>
-                      </div>
-                      <a
-                        href={option.bookUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors font-[family-name:var(--font-heading)]"
-                      >
-                        {option.bookLabel}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* AI Results */}
+        {analysis && (
+          <>
+            {/* Summary */}
+            <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-accent" />
+                <h3 className="font-[family-name:var(--font-heading)] font-semibold text-sm text-foreground">
+                  AI Recommendation
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {analysis.summary}
+              </p>
             </div>
-          </section>
+
+            {/* Emergency Banner */}
+            {travelMode === "emergency" && analysis.bestForEmergency && (
+              <EmergencyBanner
+                mode={analysis.bestForEmergency.mode}
+                reason={analysis.bestForEmergency.reason}
+                fastestReachTime={analysis.bestForEmergency.fastestReachTime}
+              />
+            )}
+
+            {/* No Route Fallback */}
+            {analysis.noRouteAlternative && (
+              <NoRouteFallback data={analysis.noRouteAlternative} />
+            )}
+
+            {/* Route Cards */}
+            {analysis.routes.length > 0 && (
+              <section>
+                <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
+                  Route Analysis ({analysis.routes.length} options)
+                </h2>
+                <div className="space-y-3">
+                  {analysis.routes.map((route, i) => (
+                    <RouteCard
+                      key={`${route.mode}-${i}`}
+                      route={route}
+                      isEmergency={travelMode === "emergency"}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
 
-        {/* Booking Partners */}
+        {/* Booking Partners (always visible) */}
         <section>
           <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
             Booking Platforms
