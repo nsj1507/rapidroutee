@@ -1,5 +1,6 @@
 import { GoogleMap, Marker, DirectionsRenderer } from "@react-google-maps/api";
 import { useState, useCallback, useEffect } from "react";
+import { useGoogleMaps } from "./GoogleMapsProvider";
 
 const mapContainerStyle = {
   width: "100%",
@@ -7,7 +8,7 @@ const mapContainerStyle = {
   borderRadius: "1rem",
 };
 
-const defaultCenter = { lat: 20.5937, lng: 78.9629 }; // India center
+const defaultCenter = { lat: 20.5937, lng: 78.9629 };
 
 const darkMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#0c2340" }] },
@@ -26,6 +27,7 @@ interface RouteMapProps {
 }
 
 export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
+  const { isLoaded, loadError } = useGoogleMaps();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
 
@@ -34,7 +36,7 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
   }, []);
 
   useEffect(() => {
-    if (!from || !to || !showDirections) {
+    if (!isLoaded || !from || !to || !showDirections) {
       setDirections(null);
       return;
     }
@@ -52,7 +54,7 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
         }
       }
     );
-  }, [from, to, showDirections]);
+  }, [isLoaded, from, to, showDirections]);
 
   useEffect(() => {
     if (!map) return;
@@ -66,6 +68,22 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
       map.setZoom(13);
     }
   }, [map, from, to]);
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-full bg-card rounded-2xl border border-border">
+        <p className="text-xs text-emergency">Map failed to load: {loadError.message}</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full bg-card rounded-2xl border border-border">
+        <p className="text-xs text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
 
   return (
     <GoogleMap

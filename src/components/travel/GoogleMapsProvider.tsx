@@ -1,8 +1,22 @@
-import { LoadScript } from "@react-google-maps/api";
-import { useState, useEffect, type ReactNode } from "react";
+import { useJsApiLoader } from "@react-google-maps/api";
+import { type ReactNode, createContext, useContext, useState, useEffect } from "react";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyCXpuqSgw_X4IqDM2NgIgfh9Seowbqt7II";
 const LIBRARIES: ("places")[] = ["places"];
+
+interface GoogleMapsContextValue {
+  isLoaded: boolean;
+  loadError: Error | undefined;
+}
+
+const GoogleMapsContext = createContext<GoogleMapsContextValue>({
+  isLoaded: false,
+  loadError: undefined,
+});
+
+export function useGoogleMaps() {
+  return useContext(GoogleMapsContext);
+}
 
 export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   const [isClient, setIsClient] = useState(false);
@@ -12,13 +26,26 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!isClient) {
-    return <>{children}</>;
+    return (
+      <GoogleMapsContext.Provider value={{ isLoaded: false, loadError: undefined }}>
+        {children}
+      </GoogleMapsContext.Provider>
+    );
   }
 
+  return <GoogleMapsProviderClient>{children}</GoogleMapsProviderClient>;
+}
+
+function GoogleMapsProviderClient({ children }: { children: ReactNode }) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES,
+  });
+
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
+    <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
       {children}
-    </LoadScript>
+    </GoogleMapsContext.Provider>
   );
 }
 

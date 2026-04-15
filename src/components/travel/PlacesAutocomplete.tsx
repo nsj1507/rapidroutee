@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useGoogleMaps } from "./GoogleMapsProvider";
 
 interface PlacesAutocompleteProps {
   value: string;
@@ -19,11 +20,12 @@ export function PlacesAutocomplete({
   className,
   icon,
 }: PlacesAutocompleteProps) {
+  const { isLoaded } = useGoogleMaps();
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   useEffect(() => {
-    if (!inputRef.current || autocompleteRef.current) return;
+    if (!isLoaded || !inputRef.current || autocompleteRef.current) return;
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "in" },
@@ -48,7 +50,7 @@ export function PlacesAutocomplete({
     return () => {
       google.maps.event.clearInstanceListeners(autocomplete);
     };
-  }, []);
+  }, [isLoaded]);
 
   return (
     <div className="relative">
@@ -63,6 +65,7 @@ export function PlacesAutocomplete({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(icon && "pl-10", "rounded-xl", className)}
+        disabled={!isLoaded}
       />
     </div>
   );
