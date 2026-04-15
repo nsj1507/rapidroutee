@@ -7,17 +7,21 @@ import {
   ArrowRight,
   Sparkles,
   AlertTriangle,
-  ExternalLink,
   Brain,
+  Crosshair,
+  Map,
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { RouteCard, type RouteData } from "@/components/travel/RouteCard";
 import { EmergencyBanner } from "@/components/travel/EmergencyBanner";
 import { NoRouteFallback } from "@/components/travel/NoRouteFallback";
 import { AnalysisLoader } from "@/components/travel/AnalysisLoader";
+import { GoogleMapsProvider } from "@/components/travel/GoogleMapsProvider";
+import { RouteMap } from "@/components/travel/RouteMap";
+import { PlacesAutocomplete } from "@/components/travel/PlacesAutocomplete";
+import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/travel")({
@@ -51,13 +55,31 @@ interface AIAnalysis {
   summary: string;
 }
 
-function TravelPage() {
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+function TravelPageContent() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [fromCoords, setFromCoords] = useState<LatLng | null>(null);
+  const [toCoords, setToCoords] = useState<LatLng | null>(null);
   const [travelMode, setTravelMode] = useState<"travel" | "emergency">("travel");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(true);
+
+  const gps = useGPSLocation();
+
+  const handleDetectLocation = async () => {
+    const loc = await gps.detect();
+    if (loc) {
+      setFrom(loc.address || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
+      setFromCoords({ lat: loc.lat, lng: loc.lng });
+    }
+  };
 
   const handleSearch = async () => {
     if (!from || !to) return;
@@ -89,31 +111,61 @@ function TravelPage() {
       <AppHeader title="Route Intelligence" subtitle="AI-powered travel analysis" />
 
       <main className="px-4 py-4 space-y-5">
+        {/* Interactive Map */}
+        {showMap && (
+          <div className="relative h-48 rounded-2xl overflow-hidden border border-border shadow-md">
+            <RouteMap from={fromCoords} to={toCoords} />
+            {!fromCoords && !toCoords && (
+              <div className="absolute inset-0 flex items-center justify-center bg-card/60 backdrop-blur-sm">
+                <p className="text-xs text-muted-foreground font-[family-name:var(--font-heading)]">
+                  Enter locations to see route on map
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Location Input */}
         <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-          <div className="relative">
-            <LocateFixed className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-success" />
-            <Input
-              placeholder="Current location"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="pl-10 rounded-xl"
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <PlacesAutocomplete
+                value={from}
+                onChange={setFrom}
+                onPlaceSelect={(p) => setFromCoords({ lat: p.lat, lng: p.lng })}
+                placeholder="Current location"
+                icon={<LocateFixed className="h-4 w-4 text-success" />}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 rounded-xl h-9 w-9"
+              onClick={handleDetectLocation}
+              disabled={gps.loading}
+              title="Detect my location"
+            >
+              <Crosshair className={`h-4 w-4 ${gps.loading ? "animate-spin text-primary" : "text-muted-foreground"}`} />
+            </Button>
           </div>
+
+          {gps.error && (
+            <p className="text-xs text-emergency">{gps.error}</p>
+          )}
+
           <div className="flex items-center gap-2">
             <div className="flex-1 h-px bg-border" />
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
             <div className="flex-1 h-px bg-border" />
           </div>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emergency" />
-            <Input
-              placeholder="Where to?"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="pl-10 rounded-xl"
-            />
-          </div>
+
+          <PlacesAutocomplete
+            value={to}
+            onChange={setTo}
+            onPlaceSelect={(p) => setToCoords({ lat: p.lat, lng: p.lng })}
+            placeholder="Where to?"
+            icon={<MapPin className="h-4 w-4 text-emergency" />}
+          />
 
           {/* Mode Toggle */}
           <div className="grid grid-cols-2 gap-2">
@@ -141,16 +193,27 @@ function TravelPage() {
             </button>
           </div>
 
-          <Button
-            onClick={handleSearch}
-            className="w-full rounded-xl"
-            size="lg"
-            variant={travelMode === "emergency" ? "emergency" : "default"}
-            disabled={!from || !to || isAnalyzing}
-          >
-            <Brain className="h-4 w-4" />
-            {isAnalyzing ? "Analyzing Routes..." : "Analyze Routes with AI"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSearch}
+              className="flex-1 rounded-xl"
+              size="lg"
+              variant={travelMode === "emergency" ? "emergency" : "default"}
+              disabled={!from || !to || isAnalyzing}
+            >
+              <Brain className="h-4 w-4" />
+              {isAnalyzing ? "Analyzing..." : "Analyze Routes"}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-xl px-3"
+              onClick={() => setShowMap((v) => !v)}
+              title={showMap ? "Hide map" : "Show map"}
+            >
+              <Map className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Loading */}
@@ -216,7 +279,7 @@ function TravelPage() {
           </>
         )}
 
-        {/* Booking Partners (always visible) */}
+        {/* Booking Partners */}
         <section>
           <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
             Booking Platforms
@@ -247,5 +310,13 @@ function TravelPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+function TravelPage() {
+  return (
+    <GoogleMapsProvider>
+      <TravelPageContent />
+    </GoogleMapsProvider>
   );
 }
