@@ -1,20 +1,17 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
-  AlertTriangle,
-  Navigation,
-  Phone,
-  Hospital,
-  Train,
-  Plane,
-  Bus,
-  Car,
   Zap,
+  Clock,
+  MapPin,
   Shield,
+  Navigation,
+  Locate,
+  Route as RouteIcon,
+  User,
+  ArrowRight,
 } from "lucide-react";
-import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { BentoCard } from "@/components/home/BentoCard";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,121 +32,147 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+const badges = [
+  { icon: Locate, label: "Live GPS" },
+  { icon: Shield, label: "Safe Routes" },
+  { icon: Clock, label: "Real-time" },
+];
+
+const howItWorks = [
+  { step: "01", title: "Set Location", desc: "Auto-detect via GPS or type your origin" },
+  { step: "02", title: "Choose Mode", desc: "Emergency or last-minute travel" },
+  { step: "03", title: "Get Routes", desc: "AI analyzes and compares all options" },
+  { step: "04", title: "Navigate", desc: "One-tap navigation to your destination" },
+];
+
 function HomePage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader subtitle="Your emergency travel companion" />
+      {/* Dark Hero Header */}
+      <header className="relative overflow-hidden bg-[oklch(0.15_0.05_240)] text-white px-5 pt-5 pb-8">
+        {/* Decorative circle */}
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emergency/20" />
 
-      <main className="px-4 py-4 space-y-4">
-        {/* SOS Banner */}
-        <button
-          onClick={() => navigate({ to: "/emergency" })}
-          className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-emergency to-emergency/80 p-5 text-emergency-foreground shadow-lg active:scale-[0.98] transition-transform"
-        >
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emergency-foreground/20 backdrop-blur-sm">
-              <Shield className="h-7 w-7" />
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-6 relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emergency text-white">
+              <Navigation className="h-4 w-4" />
             </div>
-            <div className="text-left">
-              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold">
-                Emergency SOS
-              </h2>
-              <p className="text-sm opacity-90">
-                One-tap access to emergency services
-              </p>
-            </div>
+            <span className="text-xs font-semibold tracking-wider uppercase font-[family-name:var(--font-heading)] opacity-80">
+              Rapid Route+
+            </span>
           </div>
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emergency-foreground/10" />
-        </button>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant="outline"
-            className="flex-col h-auto py-3 gap-1.5 rounded-xl"
-            onClick={() => window.open("tel:112")}
-          >
-            <Phone className="h-5 w-5 text-emergency" />
-            <span className="text-xs">Call 112</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-col h-auto py-3 gap-1.5 rounded-xl"
-            onClick={() => navigate({ to: "/emergency" })}
-          >
-            <Hospital className="h-5 w-5 text-success" />
-            <span className="text-xs">Hospital</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-col h-auto py-3 gap-1.5 rounded-xl"
-            onClick={() => navigate({ to: "/travel" })}
-          >
-            <Zap className="h-5 w-5 text-accent" />
-            <span className="text-xs">Quick Trip</span>
-          </Button>
+          {isAuthenticated ? (
+            <Link to="/profile" className="flex items-center justify-center h-9 w-9 rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-colors">
+              <User className="h-5 w-5" />
+            </Link>
+          ) : (
+            <Link to="/login" className="flex items-center justify-center h-9 w-9 rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-colors">
+              <User className="h-5 w-5" />
+            </Link>
+          )}
         </div>
 
-        {/* Bento Grid */}
+        {/* Hero text */}
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)] leading-tight">
+            Your Emergency<br />Travel Assistant
+          </h1>
+          <p className="text-sm text-white/60 mt-2">
+            AI-powered routing for urgent & last-minute travel
+          </p>
+        </div>
+
+        {/* Feature badges */}
+        <div className="flex gap-2 mt-5 relative z-10">
+          {badges.map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white/90"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </div>
+          ))}
+        </div>
+      </header>
+
+      <main className="px-4 py-5 space-y-6">
+        {/* Select Mode */}
         <section>
-          <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
-            Travel Modes
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3 font-[family-name:var(--font-heading)]">
+            Select Mode
+          </h2>
+
+          {/* Emergency Card */}
+          <button
+            onClick={() => navigate({ to: "/emergency" })}
+            className="relative w-full overflow-hidden rounded-2xl bg-emergency p-5 text-left text-white mb-3 active:scale-[0.98] transition-transform"
+          >
+            <div className="absolute -right-6 -bottom-6 h-28 w-28 rounded-full bg-white/10" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/20 mb-3">
+                <Zap className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold font-[family-name:var(--font-heading)]">
+                Emergency Travel
+              </h3>
+              <p className="text-sm text-white/80 mt-0.5">
+                Fastest route to hospitals, police, fire stations
+              </p>
+            </div>
+          </button>
+
+          {/* Last-Minute Card */}
+          <button
+            onClick={() => navigate({ to: "/travel" })}
+            className="relative w-full overflow-hidden rounded-2xl bg-primary p-5 text-left text-primary-foreground active:scale-[0.98] transition-transform"
+          >
+            <div className="absolute -right-6 -bottom-6 h-28 w-28 rounded-full bg-white/10" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-white/20 mb-3">
+                <Clock className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold font-[family-name:var(--font-heading)]">
+                Last-Minute Travel
+              </h3>
+              <p className="text-sm opacity-80 mt-0.5">
+                AI-powered route comparison for urgent trips
+              </p>
+            </div>
+          </button>
+        </section>
+
+        {/* How It Works */}
+        <section>
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3 font-[family-name:var(--font-heading)]">
+            How It Works
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            <BentoCard
-              icon={AlertTriangle}
-              title="Emergency Mode"
-              description="SOS, hospitals, police & fire services"
-              iconClassName="bg-emergency/10 text-emergency"
-              onClick={() => navigate({ to: "/emergency" })}
-            />
-            <BentoCard
-              icon={Navigation}
-              title="Last-Minute Travel"
-              description="Compare routes & book instantly"
-              iconClassName="bg-accent/10 text-accent"
-              onClick={() => navigate({ to: "/travel" })}
-            />
-            <BentoCard
-              icon={Train}
-              title="Train"
-              description="IRCTC booking & live tracking"
-              onClick={() =>
-                window.open("https://www.irctc.co.in", "_blank")
-              }
-            />
-            <BentoCard
-              icon={Plane}
-              title="Flight"
-              description="Find nearest airports & flights"
-              onClick={() =>
-                window.open("https://www.skyscanner.co.in", "_blank")
-              }
-            />
-            <BentoCard
-              icon={Bus}
-              title="Bus"
-              description="KSRTC, RedBus & local stops"
-              onClick={() =>
-                window.open("https://www.redbus.in", "_blank")
-              }
-            />
-            <BentoCard
-              icon={Car}
-              title="Drive"
-              description="Fastest driving route via maps"
-              onClick={() =>
-                window.open("https://maps.google.com", "_blank")
-              }
-            />
+            {howItWorks.map((item) => (
+              <div
+                key={item.step}
+                className="rounded-xl border border-border bg-card p-4"
+              >
+                <span className="text-2xl font-bold text-primary/30 font-[family-name:var(--font-heading)]">
+                  {item.step}
+                </span>
+                <h3 className="text-sm font-semibold text-card-foreground mt-1 font-[family-name:var(--font-heading)]">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Booking Partners */}
+        {/* Quick Links */}
         <section>
-          <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3 font-[family-name:var(--font-heading)]">
             Book Now
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-2">
