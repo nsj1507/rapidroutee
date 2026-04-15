@@ -12,7 +12,7 @@ export function useGPSLocation() {
   const [error, setError] = useState<string | null>(null);
 
   const detect = useCallback(async () => {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !navigator.geolocation) {
       setError("Geolocation not supported");
       return null;
     }
@@ -31,13 +31,14 @@ export function useGPSLocation() {
 
       const { latitude: lat, longitude: lng } = position.coords;
 
-      // Reverse geocode
       let address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       try {
-        const geocoder = new google.maps.Geocoder();
-        const result = await geocoder.geocode({ location: { lat, lng } });
-        if (result.results[0]) {
-          address = result.results[0].formatted_address;
+        if (typeof google !== "undefined" && google.maps) {
+          const geocoder = new google.maps.Geocoder();
+          const result = await geocoder.geocode({ location: { lat, lng } });
+          if (result.results[0]) {
+            address = result.results[0].formatted_address;
+          }
         }
       } catch {
         // fallback to coords
