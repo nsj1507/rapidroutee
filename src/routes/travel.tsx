@@ -23,6 +23,7 @@ import { RouteMap } from "@/components/travel/RouteMap";
 import { PlacesAutocomplete } from "@/components/travel/PlacesAutocomplete";
 import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { supabase } from "@/integrations/supabase/client";
+import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
 
 export const Route = createFileRoute("/travel")({
   head: () => ({
@@ -109,6 +110,14 @@ function TravelPageContent() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader title="Route Intelligence" subtitle="AI-powered travel analysis" />
+
+      <LocationPermissionBanner
+        onGranted={(pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setFrom(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          setFromCoords({ lat, lng });
+        }}
+      />
 
       <main className="px-4 py-4 space-y-5">
         {/* Interactive Map */}
