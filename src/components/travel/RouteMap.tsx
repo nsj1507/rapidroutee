@@ -20,13 +20,23 @@ const darkMapStyle = [
   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#112d4a" }] },
 ];
 
+export interface RouteDetails {
+  distance: string;
+  duration: string;
+  steps: { instruction: string; distance: string; duration: string }[];
+  startAddress: string;
+  endAddress: string;
+}
+
 interface RouteMapProps {
   from?: { lat: number; lng: number } | null;
   to?: { lat: number; lng: number } | null;
   showDirections?: boolean;
+  onRouteCalculated?: (details: RouteDetails | null) => void;
+  onRouteError?: (error: string) => void;
 }
 
-export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
+export function RouteMap({ from, to, showDirections = true, onRouteCalculated, onRouteError }: RouteMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -38,6 +48,7 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
   useEffect(() => {
     if (!isLoaded || !from || !to || !showDirections) {
       setDirections(null);
+      onRouteCalculated?.(null);
       return;
     }
 
@@ -51,6 +62,25 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
       (result, status) => {
         if (status === google.maps.DirectionsStatus.OK && result) {
           setDirections(result);
+          const leg = result.routes[0]?.legs[0];
+          if (leg) {
+            onRouteCalculated?.({
+              distance: leg.distance?.text || "N/A",
+              duration: leg.duration?.text || "N/A",
+              startAddress: leg.start_address || "",
+              endAddress: leg.end_address || "",
+              steps: (leg.steps || []).map((s) => ({
+                instruction: s.instructions || "",
+                distance: s.distance?.text || "",
+                duration: s.duration?.text || "",
+              })),
+            });
+          }
+          onRouteError?.(undefined as unknown as string);
+        } else {
+          setDirections(null);
+          onRouteCalculated?.(null);
+          onRouteError?.("No driving route available between these locations.");
         }
       }
     );
@@ -105,8 +135,10 @@ export function RouteMap({ from, to, showDirections = true }: RouteMapProps) {
           options={{
             polylineOptions: {
               strokeColor: "#5cbdb9",
-              strokeWeight: 4,
+              strokeWeight: 5,
+              strokeOpacity: 0.85,
             },
+            suppressMarkers: false,
           }}
         />
       )}
