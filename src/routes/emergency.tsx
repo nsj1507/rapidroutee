@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { GoogleMapsProvider, GOOGLE_MAPS_API_KEY } from "@/components/travel/GoogleMapsProvider";
 import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { useNearbyHospitals, type NearbyHospital } from "@/hooks/useNearbyHospitals";
+import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
 
 export const Route = createFileRoute("/emergency")({
   head: () => ({
@@ -83,6 +84,12 @@ function EmergencyPageContent() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader title="Emergency Mode" subtitle="Get help immediately" />
+
+      <LocationPermissionBanner
+        onGranted={(pos) => {
+          searchHospitals(pos.coords.latitude, pos.coords.longitude);
+        }}
+      />
 
       <main className="px-4 py-4 space-y-5">
         {/* SOS Dial */}

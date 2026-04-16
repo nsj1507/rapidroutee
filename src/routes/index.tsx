@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
+import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +52,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <LocationPermissionBanner />
       {/* Dark Hero Header */}
       <header className="relative overflow-hidden bg-[oklch(0.15_0.05_240)] text-white px-5 pt-5 pb-8">
         {/* Decorative circle */}
