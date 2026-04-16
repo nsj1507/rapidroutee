@@ -19,7 +19,8 @@ import { EmergencyBanner } from "@/components/travel/EmergencyBanner";
 import { NoRouteFallback } from "@/components/travel/NoRouteFallback";
 import { AnalysisLoader } from "@/components/travel/AnalysisLoader";
 import { GoogleMapsProvider } from "@/components/travel/GoogleMapsProvider";
-import { RouteMap } from "@/components/travel/RouteMap";
+import { RouteMap, type RouteDetails } from "@/components/travel/RouteMap";
+import { DirectionsPanel } from "@/components/travel/DirectionsPanel";
 import { PlacesAutocomplete } from "@/components/travel/PlacesAutocomplete";
 import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +72,8 @@ function TravelPageContent() {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(true);
+  const [routeDetails, setRouteDetails] = useState<RouteDetails | null>(null);
+  const [routeError, setRouteError] = useState<string | null>(null);
 
   const gps = useGPSLocation();
 
@@ -122,8 +125,13 @@ function TravelPageContent() {
       <main className="px-4 py-4 space-y-5">
         {/* Interactive Map */}
         {showMap && (
-          <div className="relative h-48 rounded-2xl overflow-hidden border border-border shadow-md">
-            <RouteMap from={fromCoords} to={toCoords} />
+          <div className={`relative rounded-2xl overflow-hidden border border-border shadow-md ${fromCoords && toCoords ? "h-64" : "h-48"}`}>
+            <RouteMap
+              from={fromCoords}
+              to={toCoords}
+              onRouteCalculated={setRouteDetails}
+              onRouteError={setRouteError}
+            />
             {!fromCoords && !toCoords && (
               <div className="absolute inset-0 flex items-center justify-center bg-card/60 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground font-[family-name:var(--font-heading)]">
@@ -131,6 +139,16 @@ function TravelPageContent() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Directions Panel */}
+        {routeDetails && (
+          <DirectionsPanel details={routeDetails} from={fromCoords} to={toCoords} />
+        )}
+        {routeError && !routeDetails && fromCoords && toCoords && (
+          <div className="rounded-2xl border border-emergency/30 bg-emergency/5 p-4">
+            <p className="text-sm text-emergency font-medium">{routeError}</p>
           </div>
         )}
 
