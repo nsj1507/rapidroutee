@@ -13,7 +13,9 @@ export function useGPSLocation() {
 
   const detect = useCallback(async () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      setError("Geolocation not supported");
+      const msg = "Geolocation not supported by this browser";
+      setError(msg);
+      console.error(msg);
       return null;
     }
 
@@ -30,6 +32,7 @@ export function useGPSLocation() {
       });
 
       const { latitude: lat, longitude: lng } = position.coords;
+      console.log("GPS location acquired:", { lat, lng });
 
       let address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       try {
@@ -40,8 +43,8 @@ export function useGPSLocation() {
             address = result.results[0].formatted_address;
           }
         }
-      } catch {
-        // fallback to coords
+      } catch (geoErr) {
+        console.warn("Reverse geocoding failed, using coords:", geoErr);
       }
 
       const loc = { lat, lng, address };
@@ -49,9 +52,14 @@ export function useGPSLocation() {
       setLoading(false);
       return loc;
     } catch (e) {
-      const msg = e instanceof GeolocationPositionError
-        ? e.code === 1 ? "Location permission denied" : "Could not detect location"
-        : "Location detection failed";
+      let msg = "Location detection failed";
+      if (e && typeof e === "object" && "code" in e) {
+        const code = (e as GeolocationPositionError).code;
+        if (code === 1) msg = "Location permission denied";
+        else if (code === 2) msg = "Unable to fetch location — position unavailable";
+        else if (code === 3) msg = "Unable to fetch location — request timed out";
+      }
+      console.error("Geolocation error:", e, "->", msg);
       setError(msg);
       setLoading(false);
       return null;
