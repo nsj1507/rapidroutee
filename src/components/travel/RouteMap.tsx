@@ -28,12 +28,15 @@ export interface RouteDetails {
   endAddress: string;
 }
 
+export type TravelModeKey = "DRIVING" | "WALKING" | "TRANSIT" | "BICYCLING";
+
 interface RouteMapProps {
   from?: { lat: number; lng: number } | null;
   to?: { lat: number; lng: number } | null;
   fromText?: string;
   toText?: string;
   showDirections?: boolean;
+  travelMode?: TravelModeKey;
   onRouteCalculated?: (details: RouteDetails | null) => void;
   onRouteError?: (error: string) => void;
   onCoordsResolved?: (coords: { from?: { lat: number; lng: number }; to?: { lat: number; lng: number } }) => void;
@@ -68,7 +71,7 @@ function requestRoute(
   });
 }
 
-export function RouteMap({ from, to, fromText, toText, showDirections = true, onRouteCalculated, onRouteError, onCoordsResolved }: RouteMapProps) {
+export function RouteMap({ from, to, fromText, toText, showDirections = true, travelMode = "DRIVING", onRouteCalculated, onRouteError, onCoordsResolved }: RouteMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -107,12 +110,23 @@ export function RouteMap({ from, to, fromText, toText, showDirections = true, on
 
       onCoordsResolved?.({ from: origin, to: destination });
 
-      // Try DRIVING first, then fall back to other modes
-      const modes: google.maps.TravelMode[] = [
+      // Try the user-selected mode first, then fall back to others
+      const preferredMode =
+        travelMode === "WALKING"
+          ? google.maps.TravelMode.WALKING
+          : travelMode === "TRANSIT"
+          ? google.maps.TravelMode.TRANSIT
+          : travelMode === "BICYCLING"
+          ? google.maps.TravelMode.BICYCLING
+          : google.maps.TravelMode.DRIVING;
+
+      const allModes = [
         google.maps.TravelMode.DRIVING,
         google.maps.TravelMode.TRANSIT,
         google.maps.TravelMode.WALKING,
+        google.maps.TravelMode.BICYCLING,
       ];
+      const modes = [preferredMode, ...allModes.filter((m) => m !== preferredMode)];
 
       let lastStatus: google.maps.DirectionsStatus | null = null;
       for (const mode of modes) {
@@ -138,6 +152,8 @@ export function RouteMap({ from, to, fromText, toText, showDirections = true, on
           onRouteError?.(undefined as unknown as string);
           return;
         }
+        // If denied, no point retrying other modes — same key restriction blocks all
+        if (status === google.maps.DirectionsStatus.REQUEST_DENIED) break;
       }
 
       // No mode worked
@@ -148,7 +164,7 @@ export function RouteMap({ from, to, fromText, toText, showDirections = true, on
         lastStatus === google.maps.DirectionsStatus.ZERO_RESULTS
           ? "No route found between these locations. Try nearby landmarks."
           : lastStatus === google.maps.DirectionsStatus.REQUEST_DENIED
-          ? "Directions request denied. Check Google Maps API key restrictions."
+          ? "Directions unavailable: the Google Maps API key needs the Directions API enabled and this domain allow-listed in HTTP referrer restrictions."
           : lastStatus === google.maps.DirectionsStatus.OVER_QUERY_LIMIT
           ? "Too many requests. Please wait a moment and try again."
           : `Unable to calculate route (${lastStatus ?? "unknown error"}).`;
@@ -158,7 +174,7 @@ export function RouteMap({ from, to, fromText, toText, showDirections = true, on
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, from?.lat, from?.lng, to?.lat, to?.lng, fromText, toText, showDirections]);
+  }, [isLoaded, from?.lat, from?.lng, to?.lat, to?.lng, fromText, toText, showDirections, travelMode]);
 
   useEffect(() => {
     if (!map) return;

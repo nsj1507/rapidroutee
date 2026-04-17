@@ -19,9 +19,10 @@ import { EmergencyBanner } from "@/components/travel/EmergencyBanner";
 import { NoRouteFallback } from "@/components/travel/NoRouteFallback";
 import { AnalysisLoader } from "@/components/travel/AnalysisLoader";
 import { GoogleMapsProvider } from "@/components/travel/GoogleMapsProvider";
-import { RouteMap, type RouteDetails } from "@/components/travel/RouteMap";
+import { RouteMap, type RouteDetails, type TravelModeKey } from "@/components/travel/RouteMap";
 import { DirectionsPanel } from "@/components/travel/DirectionsPanel";
 import { PlacesAutocomplete } from "@/components/travel/PlacesAutocomplete";
+import { TravelModeSelector } from "@/components/travel/TravelModeSelector";
 import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { supabase } from "@/integrations/supabase/client";
 import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
@@ -74,6 +75,7 @@ function TravelPageContent() {
   const [showMap, setShowMap] = useState(true);
   const [routeDetails, setRouteDetails] = useState<RouteDetails | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [mapTravelMode, setMapTravelMode] = useState<TravelModeKey>("DRIVING");
 
   const gps = useGPSLocation();
 
@@ -131,6 +133,7 @@ function TravelPageContent() {
               to={toCoords}
               fromText={from}
               toText={to}
+              travelMode={mapTravelMode}
               onRouteCalculated={setRouteDetails}
               onRouteError={setRouteError}
               onCoordsResolved={({ from: f, to: t }) => {
@@ -146,6 +149,11 @@ function TravelPageContent() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Travel Mode Selector — only show when we have endpoints */}
+        {(fromCoords || from) && (toCoords || to) && (
+          <TravelModeSelector value={mapTravelMode} onChange={setMapTravelMode} />
         )}
 
         {/* Directions Panel */}
