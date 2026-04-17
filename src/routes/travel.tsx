@@ -133,6 +133,7 @@ function TravelPageContent() {
               to={toCoords}
               fromText={from}
               toText={to}
+              travelMode={mapTravelMode}
               onRouteCalculated={setRouteDetails}
               onRouteError={setRouteError}
               onCoordsResolved={({ from: f, to: t }) => {
