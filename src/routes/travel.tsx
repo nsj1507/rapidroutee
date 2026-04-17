@@ -151,6 +151,11 @@ function TravelPageContent() {
           </div>
         )}
 
+        {/* Travel Mode Selector — only show when we have endpoints */}
+        {(fromCoords || from) && (toCoords || to) && (
+          <TravelModeSelector value={mapTravelMode} onChange={setMapTravelMode} />
+        )}
+
         {/* Directions Panel */}
         {routeDetails && (
           <DirectionsPanel details={routeDetails} from={fromCoords} to={toCoords} />
