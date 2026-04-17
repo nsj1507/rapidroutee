@@ -75,6 +75,7 @@ function TravelPageContent() {
   const [showMap, setShowMap] = useState(true);
   const [routeDetails, setRouteDetails] = useState<RouteDetails | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [mapTravelMode, setMapTravelMode] = useState<TravelModeKey>("DRIVING");
 
   const gps = useGPSLocation();
 
