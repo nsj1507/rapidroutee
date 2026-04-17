@@ -63,24 +63,35 @@ export function DirectionsPanel({ details, from, to }: DirectionsPanelProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
-        {navUrl && (
-          <>
+      {navUrl && (
+        <div className="space-y-2">
+          <a href={navUrl} target="_blank" rel="noopener noreferrer" className="block">
+            <Button className="w-full rounded-xl text-sm" size="lg">
+              <Car className="h-4 w-4" />
+              Use My Vehicle — Start Navigation
+            </Button>
+          </a>
+          <div className="flex gap-2">
             <a href={navUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button className="w-full rounded-xl text-xs" size="sm">
+              <Button variant="outline" size="sm" className="w-full rounded-xl text-xs">
                 <Navigation className="h-3.5 w-3.5" />
-                Start Navigation
+                Open in Google Maps
               </Button>
             </a>
-            <a href={navUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="rounded-xl text-xs">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&origin=${from!.lat},${from!.lng}&destination=${to!.lat},${to!.lng}&travelmode=driving&dir_action=navigate`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1"
+            >
+              <Button variant="outline" size="sm" className="w-full rounded-xl text-xs">
                 <ExternalLink className="h-3.5 w-3.5" />
-                Google Maps
+                Turn-by-Turn
               </Button>
             </a>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Step-by-step directions */}
       {details.steps.length > 0 && (
