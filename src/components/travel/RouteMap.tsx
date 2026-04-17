@@ -28,12 +28,15 @@ export interface RouteDetails {
   endAddress: string;
 }
 
+export type TravelModeKey = "DRIVING" | "WALKING" | "TRANSIT" | "BICYCLING";
+
 interface RouteMapProps {
   from?: { lat: number; lng: number } | null;
   to?: { lat: number; lng: number } | null;
   fromText?: string;
   toText?: string;
   showDirections?: boolean;
+  travelMode?: TravelModeKey;
   onRouteCalculated?: (details: RouteDetails | null) => void;
   onRouteError?: (error: string) => void;
   onCoordsResolved?: (coords: { from?: { lat: number; lng: number }; to?: { lat: number; lng: number } }) => void;
