@@ -129,8 +129,14 @@ function TravelPageContent() {
             <RouteMap
               from={fromCoords}
               to={toCoords}
+              fromText={from}
+              toText={to}
               onRouteCalculated={setRouteDetails}
               onRouteError={setRouteError}
+              onCoordsResolved={({ from: f, to: t }) => {
+                if (f && !fromCoords) setFromCoords(f);
+                if (t && !toCoords) setToCoords(t);
+              }}
             />
             {!fromCoords && !toCoords && (
               <div className="absolute inset-0 flex items-center justify-center bg-card/60 backdrop-blur-sm">

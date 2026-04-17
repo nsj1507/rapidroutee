@@ -31,12 +31,44 @@ export interface RouteDetails {
 interface RouteMapProps {
   from?: { lat: number; lng: number } | null;
   to?: { lat: number; lng: number } | null;
+  fromText?: string;
+  toText?: string;
   showDirections?: boolean;
   onRouteCalculated?: (details: RouteDetails | null) => void;
   onRouteError?: (error: string) => void;
+  onCoordsResolved?: (coords: { from?: { lat: number; lng: number }; to?: { lat: number; lng: number } }) => void;
 }
 
-export function RouteMap({ from, to, showDirections = true, onRouteCalculated, onRouteError }: RouteMapProps) {
+type LatLng = { lat: number; lng: number };
+
+async function geocodeAddress(address: string): Promise<LatLng | null> {
+  return new Promise((resolve) => {
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address }, (results, status) => {
+      if (status === "OK" && results && results[0]?.geometry?.location) {
+        const loc = results[0].geometry.location;
+        resolve({ lat: loc.lat(), lng: loc.lng() });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function requestRoute(
+  origin: LatLng,
+  destination: LatLng,
+  travelMode: google.maps.TravelMode
+): Promise<{ result: google.maps.DirectionsResult | null; status: google.maps.DirectionsStatus }> {
+  return new Promise((resolve) => {
+    const service = new google.maps.DirectionsService();
+    service.route({ origin, destination, travelMode }, (result, status) => {
+      resolve({ result, status });
+    });
+  });
+}
+
+export function RouteMap({ from, to, fromText, toText, showDirections = true, onRouteCalculated, onRouteError, onCoordsResolved }: RouteMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -46,20 +78,47 @@ export function RouteMap({ from, to, showDirections = true, onRouteCalculated, o
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !from || !to || !showDirections) {
+    if (!isLoaded || !showDirections) {
       setDirections(null);
       onRouteCalculated?.(null);
       return;
     }
 
-    const directionsService = new google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: from,
-        destination: to,
-        travelMode: google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
+    let cancelled = false;
+
+    (async () => {
+      // Resolve origin/destination — geocode text if coords missing
+      let origin: LatLng | null = from ?? null;
+      let destination: LatLng | null = to ?? null;
+
+      if (!origin && fromText) origin = await geocodeAddress(fromText);
+      if (!destination && toText) destination = await geocodeAddress(toText);
+
+      if (cancelled) return;
+
+      if (!origin || !destination) {
+        setDirections(null);
+        onRouteCalculated?.(null);
+        if (fromText || toText) {
+          onRouteError?.("Could not locate one of the addresses. Try a more specific place.");
+        }
+        return;
+      }
+
+      onCoordsResolved?.({ from: origin, to: destination });
+
+      // Try DRIVING first, then fall back to other modes
+      const modes: google.maps.TravelMode[] = [
+        google.maps.TravelMode.DRIVING,
+        google.maps.TravelMode.TRANSIT,
+        google.maps.TravelMode.WALKING,
+      ];
+
+      let lastStatus: google.maps.DirectionsStatus | null = null;
+      for (const mode of modes) {
+        const { result, status } = await requestRoute(origin, destination, mode);
+        if (cancelled) return;
+        lastStatus = status;
         if (status === google.maps.DirectionsStatus.OK && result) {
           setDirections(result);
           const leg = result.routes[0]?.legs[0];
@@ -77,14 +136,29 @@ export function RouteMap({ from, to, showDirections = true, onRouteCalculated, o
             });
           }
           onRouteError?.(undefined as unknown as string);
-        } else {
-          setDirections(null);
-          onRouteCalculated?.(null);
-          onRouteError?.("No driving route available between these locations.");
+          return;
         }
       }
-    );
-  }, [isLoaded, from, to, showDirections]);
+
+      // No mode worked
+      console.warn("Directions failed for all modes. Last status:", lastStatus);
+      setDirections(null);
+      onRouteCalculated?.(null);
+      const msg =
+        lastStatus === google.maps.DirectionsStatus.ZERO_RESULTS
+          ? "No route found between these locations. Try nearby landmarks."
+          : lastStatus === google.maps.DirectionsStatus.REQUEST_DENIED
+          ? "Directions request denied. Check Google Maps API key restrictions."
+          : lastStatus === google.maps.DirectionsStatus.OVER_QUERY_LIMIT
+          ? "Too many requests. Please wait a moment and try again."
+          : `Unable to calculate route (${lastStatus ?? "unknown error"}).`;
+      onRouteError?.(msg);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, from?.lat, from?.lng, to?.lat, to?.lng, fromText, toText, showDirections]);
 
   useEffect(() => {
     if (!map) return;
