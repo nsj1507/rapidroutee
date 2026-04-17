@@ -71,7 +71,7 @@ function requestRoute(
   });
 }
 
-export function RouteMap({ from, to, fromText, toText, showDirections = true, onRouteCalculated, onRouteError, onCoordsResolved }: RouteMapProps) {
+export function RouteMap({ from, to, fromText, toText, showDirections = true, travelMode = "DRIVING", onRouteCalculated, onRouteError, onCoordsResolved }: RouteMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
