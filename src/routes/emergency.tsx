@@ -51,22 +51,22 @@ function EmergencyPageContent() {
   const { hospitals, loading: hospitalsLoading, error: hospitalsError, search: searchHospitals } = useNearbyHospitals();
   const [autoDetected, setAutoDetected] = useState(false);
 
-  // Auto-detect location on mount
+  // Auto-detect location on mount — only run hospital search AFTER GPS resolves
   useEffect(() => {
-    if (!autoDetected) {
-      setAutoDetected(true);
-      gps.detect().then((loc) => {
-        if (loc) {
-          searchHospitals(loc.lat, loc.lng);
-        }
-      });
-    }
+    if (autoDetected) return;
+    setAutoDetected(true);
+    (async () => {
+      const loc = await gps.detect();
+      if (loc && loc.lat != null && loc.lng != null) {
+        await searchHospitals(loc.lat, loc.lng);
+      }
+    })();
   }, [autoDetected, gps, searchHospitals]);
 
   const handleRefreshLocation = async () => {
     const loc = await gps.detect();
-    if (loc) {
-      searchHospitals(loc.lat, loc.lng);
+    if (loc && loc.lat != null && loc.lng != null) {
+      await searchHospitals(loc.lat, loc.lng);
     }
   };
 
