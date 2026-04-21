@@ -4,7 +4,6 @@ import {
   Clock,
   MapPin,
   Shield,
-  Navigation,
   Locate,
   Route as RouteIcon,
   User,
@@ -13,6 +12,7 @@ import {
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,9 +61,7 @@ function HomePage() {
         {/* Top bar */}
         <div className="flex items-center justify-between mb-6 relative z-10">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emergency text-white">
-              <Navigation className="h-4 w-4" />
-            </div>
+            <img src={logo} alt="RapidRoute+ logo" className="h-8 w-8 object-contain rounded-lg bg-white p-0.5" />
             <span className="text-xs font-semibold tracking-wider uppercase font-[family-name:var(--font-heading)] opacity-80">
               Rapid Route+
             </span>
