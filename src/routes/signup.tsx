@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { MapPin, Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,9 +72,7 @@ function SignupPage() {
       <main className="flex-1 flex items-center justify-center px-4 pb-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center">
-            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary text-primary-foreground mx-auto mb-3">
-              <MapPin className="h-6 w-6" />
-            </div>
+            <img src={logo} alt="RapidRoute+ logo" className="h-20 w-20 object-contain mx-auto mb-3" />
             <h1 className="text-2xl font-bold font-[family-name:var(--font-heading)] text-foreground">
               Create Account
             </h1>
