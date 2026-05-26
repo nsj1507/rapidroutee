@@ -1,7 +1,7 @@
 import { useJsApiLoader } from "@react-google-maps/api";
 import { type ReactNode, createContext, useContext, useState, useEffect } from "react";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyCXpuqSgw_X4IqDM2NgIgfh9Seowbqt7II";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
 const LIBRARIES: ("places")[] = ["places"];
 
 interface GoogleMapsContextValue {
