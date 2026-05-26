@@ -22,6 +22,7 @@ import { GoogleMapsProvider, GOOGLE_MAPS_API_KEY } from "@/components/travel/Goo
 import { useGPSLocation } from "@/hooks/useGPSLocation";
 import { useNearbyHospitals, type NearbyHospital } from "@/hooks/useNearbyHospitals";
 import { LocationPermissionBanner } from "@/components/location/LocationPermissionBanner";
+import { AlertContactsCard } from "@/components/emergency/AlertContactsCard";
 
 export const Route = createFileRoute("/emergency")({
   head: () => ({
@@ -258,21 +259,8 @@ function EmergencyPageContent() {
           )}
         </section>
 
-        {/* Emergency Contacts */}
-        <section>
-          <h2 className="font-[family-name:var(--font-heading)] font-semibold text-foreground mb-3 text-base">
-            My Emergency Contacts
-          </h2>
-          <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-center">
-            <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Sign in to save emergency contacts
-            </p>
-            <Button variant="outline" size="sm" className="mt-3 rounded-xl">
-              Set up contacts
-            </Button>
-          </div>
-        </section>
+        {/* Emergency Contacts — automatic alerts */}
+        <AlertContactsCard location={gps.location} onRequestLocation={gps.detect} />
 
         {/* Nearest Station */}
         <section>
