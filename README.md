@@ -49,18 +49,6 @@ configuration required.
 | AI | Lovable AI Gateway (Google Gemini 3 Flash) |
 | Maps | Google Maps JavaScript API, Places, Directions, Distance Matrix |
 | Deploy | Cloudflare Workers (via Wrangler) |
-
----
-
-## 📸 Screenshots
-
-| Home | Emergency Mode | Travel Intelligence |
-|---|---|---|
-| ![Home](docs/screenshots/home.png) | ![Emergency](docs/screenshots/emergency.png) | ![Travel](docs/screenshots/travel.png) |
-
-> Replace these placeholders with real screenshots from your build at
-> `docs/screenshots/`.
-
 ---
 
 ## 🚀 Getting Started
@@ -201,8 +189,8 @@ like to change. For pull requests:
 
 | Name | Role | GitHub |
 |---|---|---|
-| _Your Name_ | Lead Developer | [@your-handle](https://github.com/your-handle) |
-| _Teammate_ | UI/UX | [@teammate](https://github.com/teammate) |
+| Navami S. J. | Lead Developer | [@ynsj1507](https://github.com/nsj1507) |
+
 
 _Add yourself by opening a PR!_
 
