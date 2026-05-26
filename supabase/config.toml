@@ -1,1 +1,4 @@
 project_id = "bsrxwgnkssgiwizmsbcy"
+
+[functions.route-intelligence]
+verify_jwt = true
