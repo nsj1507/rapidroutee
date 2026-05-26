@@ -6,7 +6,6 @@ import {
   Flame,
   Hospital,
   MapPin,
-  Users,
   Search,
   Navigation,
   Crosshair,
